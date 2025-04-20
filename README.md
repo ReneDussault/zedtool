@@ -50,4 +50,4 @@ python zedtool.py
 
 ## License
 
-MIT
+![MIT](https://github.com/ReneDussault/zedtool/blob/main/LICENSE.txt)
