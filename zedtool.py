@@ -17,42 +17,51 @@ class SelectionOverlay(QtWidgets.QWidget):
             QtCore.Qt.Tool
         )
         
-        # Make the window transparent to allow clicking through
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
-        
-        # Set cursor to crosshair for better selection precision
         self.setCursor(QtCore.Qt.CrossCursor)
         
-        # Get the desktop geometry to cover all screens
+        # Get the desktop geometry
         desktop = QtWidgets.QApplication.desktop()
         self.setGeometry(desktop.geometry())
         
+        # Create global shortcut for ESC key
+        self.shortcut = QtWidgets.QShortcut(QtGui.QKeySequence("Esc"), self)
+        self.shortcut.activated.connect(self.quit_app)
+        
+        # Set strong focus policy to better capture key events
+        self.setFocusPolicy(QtCore.Qt.StrongFocus)
+        self.activateWindow()
+        self.setFocus()
+        
         print("Overlay started. Drag with left mouse button to select area. Press ESC to exit.")
+
+    def quit_app(self):
+        print("Escape pressed. Exiting.")
+        QtWidgets.QApplication.instance().quit()
 
     def paintEvent(self, event):
         qp = QtGui.QPainter(self)
         
-        # Create semi-transparent overlay over the entire screen
+        # Create semi-transparent overlay
         qp.fillRect(self.rect(), QtGui.QColor(0, 0, 0, 60))
         
-        # Draw selection rectangle if we're drawing
+        # Draw selection rectangle if drawing
         if self.drawing and not self.start.isNull() and not self.end.isNull():
             selection_rect = QtCore.QRect(self.start, self.end).normalized()
             
-            # Make the selected area fully transparent
+            # Make selected area transparent
             mask = QtGui.QRegion(self.rect())
             mask = mask.subtracted(QtGui.QRegion(selection_rect))
             
-            # Darker overlay for non-selected areas
             qp.setClipRegion(mask)
             qp.fillRect(self.rect(), QtGui.QColor(0, 0, 0, 120))
             qp.setClipRect(self.rect())
             
-            # Draw green border around selection
+            # Draw green border
             qp.setPen(QtGui.QPen(QtGui.QColor(0, 255, 0), 2))
             qp.drawRect(selection_rect)
             
-            # Display dimensions in the corner of selection
+            # Display dimensions
             width = selection_rect.width()
             height = selection_rect.height()
             if width > 0 and height > 0:
@@ -89,7 +98,7 @@ class SelectionOverlay(QtWidgets.QWidget):
             self.drawing = False
             self.end = event.pos()
             
-            # Get the rectangle data
+            # Get rectangle data
             rect = QtCore.QRect(self.start, self.end).normalized()
             width = rect.width()
             height = rect.height()
@@ -98,25 +107,30 @@ class SelectionOverlay(QtWidgets.QWidget):
                 gcd = math.gcd(width, height)
                 ratio = f"{width // gcd}:{height // gcd}"
                 
-                # Show the result in a message box
+                # Show result
                 QtWidgets.QMessageBox.information(
                     self, "Selection Result",
                     f"Width: {width} px\nHeight: {height} px\nAspect Ratio: {ratio}"
                 )
-                QtWidgets.qApp.quit()
+                QtWidgets.QApplication.instance().quit()
             else:
-                # Reset if invalid selection
+                # Reset if invalid
                 self.start = QtCore.QPoint()
                 self.end = QtCore.QPoint()
                 self.update()
 
+    # Keep all keyboard event handlers for redundancy
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_Escape:
-            print("Escape pressed. Exiting.")
-            QtWidgets.qApp.quit()
+            self.quit_app()
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
     overlay = SelectionOverlay()
     overlay.show()
+    
+    # Set window to active state to ensure it captures keyboard events
+    overlay.raise_()
+    overlay.activateWindow()
+    
     sys.exit(app.exec_())
