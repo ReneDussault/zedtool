@@ -51,7 +51,3 @@ python zedtool.py
 ## License
 
 MIT
-
-## Contributing
-
-Pull requests welcome! Please see CONTRIBUTING.md for guidelines.
